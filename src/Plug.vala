@@ -21,7 +21,11 @@ namespace Power {
     private GLib.Settings settings;
 
     public class Plug : Switchboard.Plug {
-        private MainView main_view;
+        private DisplayView display_view;
+        private HardwareView hardware_view;
+        private SuspendView suspend_view;
+        private Gtk.Stack stack;
+        private Gtk.Paned hpaned;
 
         public Plug () {
             var supported_settings = new Gee.TreeMap<string, string?> (null, null);
@@ -36,22 +40,28 @@ namespace Power {
         }
 
         public override Gtk.Widget get_widget () {
-            if (main_view == null) {
-                main_view = new MainView ();
-            }
-            return main_view;
+          if (hpaned == null) {
+            display_view = new DisplayView ();
+            hardware_view = new HardwareView ();
+            suspend_view = new SuspendView ();
+
+            stack = new Gtk.Stack ();
+            stack.add_named (display_view, "display");
+            stack.add_named (hardware_view, "hardware");
+            stack.add_named (suspend_view, "suspend");
+
+            var switcher = new Granite.SettingsSidebar (stack);
+
+            hpaned = new Gtk.Paned (Gtk.Orientation.HORIZONTAL);
+            hpaned.pack1 (switcher, false, false);
+            hpaned.add (stack);
+            hpaned.show_all ();
+          }
+          return hpaned;
         }
 
         public override void shown () {
-            if (main_view.stack == null) {
-                return;
-            }
 
-            if (main_view.battery.is_present ()) {
-                main_view.stack.visible_child_name = "battery";
-            } else {
-                main_view.stack.visible_child_name = "ac";
-            }
         }
 
         public override void hidden () {
